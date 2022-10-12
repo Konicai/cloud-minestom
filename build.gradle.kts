@@ -7,7 +7,7 @@ plugins {
 val minestomVersion = "0b0dc83ffe"
 val cloudVersion = "1.7.1"
 
-group = "io.github.openminigameserver"
+group = "me.konicai"
 //Use the same version as cloud
 version = cloudVersion
 
@@ -21,7 +21,16 @@ repositories {
     //maven("https://libraries.minecraft.net")
     //maven("https://repo.spongepowered.org/maven")
 }
+
 dependencies {
     api("cloud.commandframework:cloud-core:$cloudVersion")
     compileOnly("com.github.Minestom:Minestom:$minestomVersion")
+}
+
+publishing {
+    publications {
+        create<MavenPublication>("maven") {
+            from(components["java"])
+        }
+    }
 }
