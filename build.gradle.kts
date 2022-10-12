@@ -5,7 +5,7 @@ plugins {
 }
 
 val minestomVersion = "0b0dc83ffe"
-val cloudVersion = "1.7.1"
+val cloudVersion = "1.5.0"
 
 group = "me.konicai"
 //Use the same version as cloud
