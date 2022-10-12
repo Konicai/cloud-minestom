@@ -11,6 +11,7 @@ import io.github.openminigameserver.cloudminestom.caption.MinestomCaptionRegistr
 import io.github.openminigameserver.cloudminestom.parsers.PlayerArgument;
 import io.leangen.geantyref.TypeToken;
 import net.minestom.server.command.CommandSender;
+import net.minestom.server.command.ConsoleSender;
 import net.minestom.server.entity.Player;
 import org.jetbrains.annotations.NotNull;
 
@@ -49,17 +50,17 @@ public class MinestomCommandManager<C> extends CommandManager<C> {
                                      final @NotNull Function<CommandSender, C> commandSenderMapper,
                                      final @NotNull Function<C, CommandSender> backwardsCommandSenderMapper) {
         super(commandExecutionCoordinator, new MinestomCommandRegistrationHandler<>());
-        CommandRegistrationHandler registrationHandler = getCommandRegistrationHandler();
+        CommandRegistrationHandler registrationHandler = commandRegistrationHandler();
         if (registrationHandler instanceof MinestomCommandRegistrationHandler)
             ((MinestomCommandRegistrationHandler<C>) registrationHandler).initialize(this);
         this.commandSenderMapper = commandSenderMapper;
         this.backwardsCommandSenderMapper = backwardsCommandSenderMapper;
 
 
-        this.getParserRegistry().registerParserSupplier(TypeToken.get(Player.class), parserParameters ->
+        this.parserRegistry().registerParserSupplier(TypeToken.get(Player.class), parserParameters ->
                 new PlayerArgument.PlayerParser<>());
 
-        this.setCaptionRegistry(new MinestomCaptionRegistry<>());
+        this.captionRegistry(new MinestomCaptionRegistry<>());
     }
 
     @NotNull
@@ -76,7 +77,7 @@ public class MinestomCommandManager<C> extends CommandManager<C> {
     public boolean hasPermission(@NotNull C sender,
                                  @NotNull String permission) {
         CommandSender minestomSender = backwardsMapCommandSender(sender);
-        return minestomSender.isConsole() || minestomSender.hasPermission(permission);
+        return minestomSender instanceof ConsoleSender || minestomSender.hasPermission(permission);
     }
 
     @Override

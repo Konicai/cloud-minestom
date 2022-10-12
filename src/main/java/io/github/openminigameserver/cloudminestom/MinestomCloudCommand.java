@@ -2,35 +2,29 @@ package io.github.openminigameserver.cloudminestom;
 
 import cloud.commandframework.exceptions.*;
 import kotlin.collections.ArraysKt;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
 import net.minestom.server.MinecraftServer;
-import net.minestom.server.chat.ChatColor;
 import net.minestom.server.command.CommandSender;
-import net.minestom.server.command.builder.Arguments;
+import net.minestom.server.command.builder.CommandContext;
+import net.minestom.server.command.builder.arguments.Argument;
 import net.minestom.server.command.builder.Command;
 import net.minestom.server.command.builder.CommandExecutor;
 import net.minestom.server.command.builder.CommandSyntax;
-import net.minestom.server.command.builder.arguments.Argument;
-import net.minestom.server.command.builder.arguments.ArgumentDynamicStringArray;
-import net.minestom.server.command.builder.arguments.ArgumentDynamicWord;
+import net.minestom.server.command.builder.arguments.ArgumentStringArray;
+import net.minestom.server.command.builder.arguments.ArgumentWord;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CompletionException;
 import java.util.stream.Collectors;
 
-import static io.github.openminigameserver.cloudminestom.CloudInteropHelper.removeSlashPrefix;
-
 public class MinestomCloudCommand<C> extends Command {
 
-    private static final String MESSAGE_INTERNAL_ERROR = ChatColor.RED
-            + "An internal error occurred while attempting to perform this" +
-            " command.";
-    private static final String MESSAGE_NO_PERMS =
-            ChatColor.RED + "I'm sorry, but you do not have permission to perform this command. "
-                    + "Please contact the server administrators if you believe that this is in error.";
-    private static final String MESSAGE_UNKNOWN_COMMAND = "Unknown command. Type \"/help\" for help.";
+    private static final Component MESSAGE_INTERNAL_ERROR = Component.text("An internal error occurred while attempting to perform this command.", NamedTextColor.RED);
+    private static final Component MESSAGE_NO_PERMS = Component.text("I'm sorry, but you do not have permission to perform this command. Please contact the server administrators if you believe that this is in error.", NamedTextColor.RED);
+    private static final Component MESSAGE_UNKNOWN_COMMAND = Component.text("Unknown command. Type \"/help\" for help.");
 
     private final MinestomCommandManager<C> manager;
     private final CommandExecutor emptyExecutor = (sender, args) -> {
@@ -75,7 +69,7 @@ public class MinestomCloudCommand<C> extends Command {
             addSyntax(emptyExecutor, arguments);
 
             var toMove = syntaxes.stream().filter(it ->
-                    Arrays.stream(it.getArguments()).allMatch(arg -> arg instanceof ArgumentDynamicWord)
+                    Arrays.stream(it.getArguments()).allMatch(arg -> arg instanceof ArgumentWord)
             ).collect(Collectors.toList());
 
             syntaxes.removeAll(toMove);
@@ -89,16 +83,16 @@ public class MinestomCloudCommand<C> extends Command {
         if (isAmbiguous) return;
 
         isAmbiguous = syntaxes.stream().anyMatch(it -> ArraysKt.indexOfFirst(it.getArguments(),
-                arg -> arg instanceof ArgumentDynamicWord) == 0);
+                arg -> arg instanceof ArgumentWord) == 0);
 
         if (isAmbiguous) {
             syntaxes.clear();
-            addSyntax(emptyExecutor, new ArgumentDynamicStringArray("args"));
+            addSyntax(emptyExecutor, new ArgumentStringArray("args"));
         }
     }
 
     @Override
-    public void globalListener(@NotNull CommandSender commandSender, @NotNull Arguments arguments,
+    public void globalListener(@NotNull CommandSender commandSender, @NotNull CommandContext context,
                                @NotNull String command) {
         var input = CloudInteropHelper.removeSlashPrefix(command);
         final C sender = this.manager.mapCommandSender(commandSender);
@@ -116,12 +110,10 @@ public class MinestomCloudCommand<C> extends Command {
                             this.manager.handleException(sender,
                                     InvalidSyntaxException.class,
                                     (InvalidSyntaxException) throwable, (c, e) ->
-                                            commandSender.sendMessage(
-                                                    ChatColor.RED + "Invalid Command Syntax. "
-                                                            + "Correct command syntax is: "
-                                                            + ChatColor.GRAY + "/"
-                                                            + ((InvalidSyntaxException) finalThrowable)
-                                                            .getCorrectSyntax())
+                                            commandSender.sendMessage(Component.textOfChildren(
+                                                    Component.text("Invalid Command Syntax. Correct command syntax is: ", NamedTextColor.RED),
+                                                    Component.text("/" + ((InvalidSyntaxException) finalThrowable).getCorrectSyntax(), NamedTextColor.GRAY)
+                                            ))
                             );
                         } else if (throwable instanceof InvalidCommandSenderException) {
                             this.manager.handleException(sender,
@@ -145,9 +137,10 @@ public class MinestomCloudCommand<C> extends Command {
                             this.manager.handleException(sender,
                                     ArgumentParseException.class,
                                     (ArgumentParseException) throwable, (c, e) ->
-                                            commandSender.sendMessage(
-                                                    ChatColor.RED + "Invalid Command Argument: "
-                                                            + ChatColor.GRAY + finalThrowable.getCause().getMessage())
+                                            commandSender.sendMessage(Component.textOfChildren(
+                                                    Component.text("Invalid Command Argument: ", NamedTextColor.RED),
+                                                    Component.text(finalThrowable.getCause().getMessage(), NamedTextColor.GRAY)
+                                            ))
                             );
                         } else if (throwable instanceof CommandExecutionException) {
                             this.manager.handleException(sender,
@@ -171,11 +164,4 @@ public class MinestomCloudCommand<C> extends Command {
                 });
 
     }
-
-    @Nullable
-    @Override
-    public String[] onDynamicWrite(@NotNull CommandSender sender, @NotNull String text) {
-        return manager.suggest(manager.mapCommandSender(sender), removeSlashPrefix(text)).toArray(String[]::new);
-    }
-
 }
