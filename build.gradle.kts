@@ -1,6 +1,7 @@
 plugins {
     java
     `java-library`
+    `maven-publish`
 }
 
 val minestomVersion = "0b0dc83ffe"
